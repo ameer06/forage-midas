@@ -2,11 +2,15 @@ package com.jpmc.midascore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpmc.midascore.foundation.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class KafkaConsumer {
+
+    private static final Logger log = LoggerFactory.getLogger(KafkaConsumer.class);
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -19,10 +23,15 @@ public class KafkaConsumer {
             Transaction transaction =
                     objectMapper.readValue(message, Transaction.class);
 
-            System.out.println("Amount: " + transaction.getAmount());
+            if (transaction == null) {
+                log.warn("Received null transaction from Kafka topic");
+                return;
+            }
+
+            log.info("Received transaction - Amount: {}", transaction.getAmount());
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("Failed to process Kafka message: {}", message, e);
         }
     }
 }
